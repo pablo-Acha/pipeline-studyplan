@@ -1,0 +1,37 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # o la rama que uses
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Copy repo to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+          "mkdir -p ~/studyplann_app"
+          scp -r ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/studyplann_app/
+
+      - name: Build and run Docker on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/studyplann_app
+            docker stop studyplann_container || true
+            docker rm studyplann_container || true
+            docker build -t studyplann .
+            docker run -d -p 5000:5000 --name studyplann_container -e GEMINI_API_KEY=${GEMINI_API_KEY} studyplann
+          EOF
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
