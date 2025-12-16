@@ -3,34 +3,41 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # o la rama que uses
+      - main  # Cambia si tu rama principal es otra
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Clonar el repo
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # 2️⃣ Configurar SSH
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+      # 3️⃣ Copiar todo el repo al EC2
       - name: Copy repo to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
           "mkdir -p ~/studyplann_app"
           scp -r ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/studyplann_app/
 
+      # 4️⃣ Construir y correr Docker en EC2
       - name: Build and run Docker on EC2
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/studyplann_app
+            # Detener y eliminar contenedor antiguo si existe
             docker stop studyplann_container || true
             docker rm studyplann_container || true
+            # Build de la imagen
             docker build -t studyplann .
+            # Levantar contenedor con API Key
             docker run -d -p 5000:5000 --name studyplann_container -e GEMINI_API_KEY=${GEMINI_API_KEY} studyplann
           EOF
         env:

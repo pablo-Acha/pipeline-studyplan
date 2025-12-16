@@ -47,6 +47,7 @@ class GeminiClient:
             self.model = genai.GenerativeModel("gemini-2.5-flash")
             self.chat = self.model.start_chat(history=[])
 
+
         except Exception as e:
             print(f"Error configuring Gemini API: {e}")
             self.chat = None
