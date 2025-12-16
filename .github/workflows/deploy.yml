@@ -38,7 +38,10 @@ jobs:
             # Build de la imagen
             docker build -t studyplann .
             # Levantar contenedor con API Key
-            docker run -d -p 5000:5000 --name studyplann_container -e GEMINI_API_KEY=${GEMINI_API_KEY} studyplann
+            docker run -d -p 5000:5000 \
+  --name studyplann_container \
+  -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+  studyplann
           EOF
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
